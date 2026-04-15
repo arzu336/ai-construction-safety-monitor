@@ -1,0 +1,8 @@
+path: C:/Users/sahip/Desktop/ai-construction-safety-monitor/data
+train: images/train
+val: images/val
+
+names:
+  0: helmet
+  1: vest
+  2: person

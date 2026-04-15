@@ -1,13 +1,12 @@
 import streamlit as st
-from PIL import Image
 import os
-from detector import detect_people
+from detector import detect_ppe
 from rules import evaluate_safety
 
 st.set_page_config(page_title="AI Construction Safety Monitor", layout="wide")
 
 st.title("🏗️ AI Construction Safety Monitor")
-st.write("Şantiye güvenliği için yapay zeka destekli izleme paneli")
+st.write("Şantiye güvenliği için yapay zeka destekli PPE izleme paneli")
 
 uploaded_file = st.file_uploader("Bir şantiye görseli yükleyin", type=["jpg", "jpeg", "png"])
 
@@ -22,19 +21,23 @@ if uploaded_file is not None:
     st.image(image_path, caption="Orijinal Görsel", use_container_width=True)
 
     with st.spinner("Analiz yapılıyor..."):
-        detection_result = detect_people(image_path)
-        safety_result = evaluate_safety(detection_result["person_count"])
+        detection_result = detect_ppe(image_path)
+        safety_result = evaluate_safety(detection_result)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Tespit Sonucu")
-        st.image(detection_result["output_image"], caption="Algılama Çıktısı", use_container_width=True)
+        st.subheader("Model Çıktısı")
+        st.image(detection_result["output_image"], caption="Tespit Sonucu", use_container_width=True)
 
     with col2:
         st.subheader("Analiz Özeti")
-        st.metric("Tespit Edilen Çalışan Sayısı", detection_result["person_count"])
-        st.metric("Risk Seviyesi", safety_result["risk_level"])
+        st.metric("Çalışan Sayısı", detection_result["person"])
+        st.metric("Baret Sayısı", detection_result["helmet"])
+        st.metric("Yelek Sayısı", detection_result["vest"])
+        st.metric("Baretsiz Çalışan", safety_result["no_helmet"])
+        st.metric("Yeleksiz Çalışan", safety_result["no_vest"])
+        st.metric("Risk Seviyesi", safety_result["risk"])
 
         st.subheader("Uyarılar")
         for alert in safety_result["alerts"]:

@@ -1,21 +1,68 @@
-def evaluate_safety(person_count: int):
+def box_center(box):
+    cx = (box["x1"] + box["x2"]) / 2
+    cy = (box["y1"] + box["y2"]) / 2
+    return cx, cy
+
+def point_in_box(x, y, box):
+    return box["x1"] <= x <= box["x2"] and box["y1"] <= y <= box["y2"]
+
+def evaluate_safety(data):
+    persons = [b for b in data["boxes"] if b["class"] == "person"]
+    helmets = [b for b in data["boxes"] if b["class"] == "helmet"]
+    vests = [b for b in data["boxes"] if b["class"] == "vest"]
+
+    no_helmet = 0
+    no_vest = 0
+
+    for person in persons:
+        has_helmet = False
+        has_vest = False
+
+        for helmet in helmets:
+            hx, hy = box_center(helmet)
+            if point_in_box(hx, hy, person):
+                has_helmet = True
+                break
+
+        for vest in vests:
+            vx, vy = box_center(vest)
+            if point_in_box(vx, vy, person):
+                has_vest = True
+                break
+
+        if not has_helmet:
+            no_helmet += 1
+        if not has_vest:
+            no_vest += 1
+
     alerts = []
 
-    if person_count == 0:
-        alerts.append("Şantiyede çalışan tespit edilmedi.")
-    elif person_count > 0:
-        alerts.append(f"{person_count} çalışan tespit edildi.")
-        alerts.append("KKE analizi bir sonraki sürümde eklenecek.")
-        alerts.append("Risk izleme sistemi aktif.")
+    if len(persons) == 0:
+        return {
+            "risk": "Yok",
+            "alerts": ["Çalışan tespit edilmedi."],
+            "no_helmet": 0,
+            "no_vest": 0
+        }
 
-    risk_level = "Düşük"
+    if no_helmet > 0:
+        alerts.append(f"⚠️ {no_helmet} çalışan baret kullanmıyor.")
+    if no_vest > 0:
+        alerts.append(f"⚠️ {no_vest} çalışan yelek kullanmıyor.")
 
-    if person_count >= 3:
-        risk_level = "Orta"
-    if person_count >= 6:
-        risk_level = "Yüksek"
+    if no_helmet == 0 and no_vest == 0:
+        alerts.append("✅ Tespit edilen çalışanlarda temel KKE uyumu sağlanıyor.")
+
+    if no_helmet > 0 or no_vest > 1:
+        risk = "Yüksek"
+    elif no_helmet > 0 or no_vest > 0:
+        risk = "Orta"
+    else:
+        risk = "Düşük"
 
     return {
-        "risk_level": risk_level,
-        "alerts": alerts
+        "risk": risk,
+        "alerts": alerts,
+        "no_helmet": no_helmet,
+        "no_vest": no_vest
     }
